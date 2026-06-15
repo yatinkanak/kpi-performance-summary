@@ -1,0 +1,49 @@
+# uv workspace root for the KPI Performance Summary monorepo.
+#
+# This is a *virtual* root (package = false): it isn't built or installed itself,
+# it just ties the three Python packages together so a single `uv sync` provisions
+# one shared .venv with all of them editable, plus the test tooling.
+#
+#   packages/core  → shared domain logic (kpi_perf_summary_core)
+#   apps/api       → FastAPI adapter
+#   apps/mcp       → FastMCP adapter
+#
+# The cross-package dependency on kpi-perf-summary-core is wired via
+# [tool.uv.sources] below; those sources are inherited by every workspace member,
+# so the apps resolve `core` from the local checkout rather than PyPI.
+[project]
+name = "kpi-performance-summary"
+version = "0.1.0"
+description = "Public Investor KPI Performance Summary — uv workspace (core + API + MCP)"
+requires-python = ">=3.11"
+dependencies = [
+    "kpi-perf-summary-core",
+    "kpi-perf-summary-api",
+    "kpi-perf-summary-mcp",
+]
+
+# Installed by `uv sync` for local development/testing (api + mcp suites).
+[dependency-groups]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.27.0",
+]
+
+# Lets `uv run pytest` from the repo root collect both backend suites with the
+# same async settings the per-app configs use (each app also keeps its own copy
+# so `pytest` still works when run from inside apps/api or apps/mcp, or in Docker).
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["apps/api/tests", "apps/mcp/tests"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/core", "apps/api", "apps/mcp"]
+
+[tool.uv.sources]
+kpi-perf-summary-core = { workspace = true }
+kpi-perf-summary-api = { workspace = true }
+kpi-perf-summary-mcp = { workspace = true }

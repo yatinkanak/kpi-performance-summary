@@ -1,0 +1,19 @@
+[project]
+name = "kpi-perf-summary-mcp"
+version = "0.1.0"
+description = "FastMCP adapter exposing the KPI data API to AI agents"
+requires-python = ">=3.11"
+dependencies = [
+    "kpi-perf-summary-core",
+    "fastmcp>=2.3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2.0", "pytest-asyncio>=0.23.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

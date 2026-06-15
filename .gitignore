@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+# Note: uv.lock and .python-version are intentionally committed (reproducible installs).
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+coverage/
+
+# Env / secrets
+.env
+.env.local
+
+# Editor / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store

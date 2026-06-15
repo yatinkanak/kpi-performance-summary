@@ -1,0 +1,26 @@
+[project]
+name = "kpi-perf-summary-api"
+version = "0.1.0"
+description = "FastAPI adapter for the Public Investor KPI Performance Summary app"
+requires-python = ">=3.11"
+dependencies = [
+    "kpi-perf-summary-core",
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+    "structlog>=24.1.0",
+    "slowapi>=0.1.9",
+    "prometheus-client>=0.20.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2.0", "pytest-asyncio>=0.23.0", "httpx>=0.27.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

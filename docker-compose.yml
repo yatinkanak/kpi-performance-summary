@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kps}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kps}
+      POSTGRES_DB: ${POSTGRES_DB:-kps}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kps}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      KPS_ENVIRONMENT: ${KPS_ENVIRONMENT:-development}
+      KPS_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-kps}:${POSTGRES_PASSWORD:-kps}@db:5432/${POSTGRES_DB:-kps}
+      KPS_PUBLISH_TOKEN: ${KPS_PUBLISH_TOKEN:-dev-publish-token}
+      KPS_CORS_ORIGINS: ${KPS_CORS_ORIGINS:-http://localhost:5173}
+    command: >
+      sh -c "python -m scripts.init_db && python -m scripts.seed &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  mcp:
+    build:
+      context: .
+      dockerfile: apps/mcp/Dockerfile
+    environment:
+      KPS_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-kps}:${POSTGRES_PASSWORD:-kps}@db:5432/${POSTGRES_DB:-kps}
+    # HTTP transport so AI clients can reach it at http://localhost:8765/mcp
+    command: python server.py --transport http --host 0.0.0.0 --port 8765
+    ports:
+      - "8765:8765"
+    depends_on:
+      - api
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
