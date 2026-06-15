@@ -3,6 +3,7 @@
 Idempotent: if the estimates table already has rows, seeding is skipped so a
 container restart does not append duplicate facts.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -10,10 +11,9 @@ import csv
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import func, select
-
 from kpi_perf_summary_core.db.models import Company, Estimate, EstimateType, Kpi, Sector
 from kpi_perf_summary_core.db.session import SessionFactory
+from sqlalchemy import func, select
 
 CSV_PATH = Path(__file__).resolve().parents[1] / "data" / "kpi_sample_2000.csv"
 

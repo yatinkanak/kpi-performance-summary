@@ -3,10 +3,10 @@
 Reads go through the ``current_estimates`` view (latest publish per logical key);
 writes append to the ``estimates`` table.
 """
+
 from __future__ import annotations
 
 from datetime import date
-from typing import Optional
 
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +38,7 @@ class Repository:
         return list((await self.s.execute(select(Kpi).order_by(Kpi.name))).scalars())
 
     async def search_companies(
-        self, search: Optional[str], sector: Optional[str], limit: int, offset: int
+        self, search: str | None, sector: str | None, limit: int, offset: int
     ) -> list[dict]:
         q = (
             select(Company.ticker, Company.name, Sector.name)
@@ -49,9 +49,7 @@ class Repository:
         )
         if search:
             like = f"%{search.lower()}%"
-            q = q.where(
-                func.lower(Company.name).like(like) | func.lower(Company.ticker).like(like)
-            )
+            q = q.where(func.lower(Company.name).like(like) | func.lower(Company.ticker).like(like))
         if sector:
             q = q.where(func.lower(Sector.name) == sector.lower())
         rows = (await self.s.execute(q)).all()
@@ -69,12 +67,12 @@ class Repository:
             raise NotFoundError(f"Company '{ticker}' not found")
         return {"id": row[0], "ticker": row[1], "name": row[2], "sector": row[3]}
 
-    async def get_kpi_by_name(self, name: str) -> Optional[Kpi]:
+    async def get_kpi_by_name(self, name: str) -> Kpi | None:
         return (
             await self.s.execute(select(Kpi).where(func.lower(Kpi.name) == name.lower()))
         ).scalar_one_or_none()
 
-    async def get_kpi(self, kpi_id: int) -> Optional[Kpi]:
+    async def get_kpi(self, kpi_id: int) -> Kpi | None:
         return await self.s.get(Kpi, kpi_id)
 
     async def kpis_for_company(self, company_id: int) -> list[Kpi]:
@@ -94,9 +92,7 @@ class Repository:
     async def company_last_updated(self, company_id: int):
         return (
             await self.s.execute(
-                select(func.max(Estimate.published_at)).where(
-                    Estimate.company_id == company_id
-                )
+                select(func.max(Estimate.published_at)).where(Estimate.company_id == company_id)
             )
         ).scalar_one_or_none()
 
@@ -105,8 +101,8 @@ class Repository:
         self,
         ticker: str,
         kpi_id: int,
-        date_from: Optional[date],
-        date_to: Optional[date],
+        date_from: date | None,
+        date_to: date | None,
     ) -> list[dict]:
         sql = text(
             """
@@ -135,9 +131,7 @@ class Repository:
         return [dict(r) for r in rows]
 
     # ----- write (append-only) -------------------------------------------
-    async def insert_estimate(
-        self, company_id: int, kpi_id: int, payload: dict
-    ) -> Estimate:
+    async def insert_estimate(self, company_id: int, kpi_id: int, payload: dict) -> Estimate:
         est = Estimate(
             company_id=company_id,
             kpi_id=kpi_id,

@@ -4,6 +4,7 @@ Reads (see ``repositories.py``) go through this view, which collapses the append
 ``estimates`` ledger to the latest publish per logical key. ``init_db`` creates it and the
 test suites recreate it; all import it from here so the DDL is defined exactly once.
 """
+
 from __future__ import annotations
 
 CURRENT_ESTIMATES_VIEW = """

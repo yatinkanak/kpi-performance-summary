@@ -1,15 +1,15 @@
 """Shared FastAPI dependencies."""
+
 from __future__ import annotations
 
 import secrets
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from kpi_perf_summary_core.config import get_settings
 from kpi_perf_summary_core.db.session import get_session
 from kpi_perf_summary_core.services import KpiService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def get_service(

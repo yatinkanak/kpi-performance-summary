@@ -242,3 +242,42 @@ quarter-to-date; idempotency = a retry has the same effect as one call.)*
   error aggregation; capture the **who** on each publish (complements existing `published_at`).
 - **Security & auth** — OAuth2/OIDC identity, per-client keys with rotation, secrets vault +
   TLS, separate read/write DB roles, security headers + request-size limits (see §8).
+
+---
+
+## 10. Live-demo implementability triage (30–45 min)
+
+§9 is ordered by *production priority*; this section re-sorts the same items by *"could I
+build it live if asked to extend the app right now."* If the interviewer says "show me," reach
+for a Tier 1 item; route everything in Tier 3 into a design conversation instead of coding.
+
+**Tier 1 — genuinely live-codeable (pick 1–2; each finishes with something working):**
+
+| Item | ~Time | Why it's easy in this codebase |
+|---|---|---|
+| Security headers | 5 min | One Starlette middleware; verify with `curl -I`. No schema/deps. |
+| MCP **resource** for the KPI catalog | 10 min | Add one `@mcp.resource` beside the existing `@mcp.tool`s in `server.py`. Signals MCP depth. |
+| Capture the publish **actor** ("who") | 10–15 min | `estimates` already has `source`; add an `actor` column + read a header in the publish path. `create_all` picks it up; add one test. |
+| Tune / tier **rate limits** | 5 min | `slowapi` limiter already in `main.py` — add a per-route limit. |
+| **Sector rollup** endpoint | 15 min | Read-only aggregate per sector; `list_sectors` already does counts — same shape. |
+
+**Tier 2 — possible but watch the clock (only if confident; demo one slice):**
+
+- **`Idempotency-Key` on publish** — column + unique index + catch `IntegrityError`; touches schema + error path (~20 min).
+- **Revision delta** on a series point — compute "changed by X since last publish" from the ledger; the *alerting* half is discuss-only.
+- **OpenAPI → TS client generation** — run `openapi-typescript` against `/openapi.json` and show generated types; fully replacing the hand-written `client.ts` is more than 45 min.
+- **Redis cache** on one endpoint — clean in theory (cache-aside + invalidate on publish), but Redis isn't wired into compose yet, so it's a lot of moving parts under time pressure.
+
+**Tier 3 — too hard for a live demo → discuss the design, don't code:**
+
+- **Alembic migrations** — boilerplate-heavy, easy to stall, nothing visual.
+- **Materialized view / `is_current`, partitioning, replicas, PgBouncer, CDN** — scale plumbing; benefit isn't demonstrable on 2k rows.
+- **Real auth (OAuth2/OIDC, sessions/BFF, separate DB roles)** — the whole §8/ADR-8 design; describe it.
+- **OpenTelemetry + Sentry** — config + external collector/DSN; nothing to *see* live.
+- **LLM-eval harness** — a mini-project (dataset + scoring).
+- **Cross-quarter QTD `pace_vs_prior`** — needs prior-quarter QTD data synthesized first; the prerequisite kills it as a clean live build.
+- **WebSocket/SSE push + watchlists** — multi-layer, and watchlists are meaningless without users/auth.
+
+**One-liner:** lead with *MCP resource* or *security headers* (fast, self-contained), keep
+*actor-on-publish* or *sector rollup* as the meatier option, and turn every Tier 3 ask into
+"here's how I'd approach it and why I'd defer it." (See also §6 extend-it prompts.)

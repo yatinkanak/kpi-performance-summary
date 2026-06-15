@@ -1,4 +1,4 @@
-.PHONY: up down clean seed logs test rebuild install test-local dev
+.PHONY: up down clean seed logs test rebuild install test-local dev lint fmt
 
 # Local Postgres URL used by the uv (non-Docker) targets; override on the CLI, e.g.
 #   make test-local KPS_DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db
@@ -51,3 +51,13 @@ dev:
 	cd apps/api && KPS_DATABASE_URL=$(KPS_DATABASE_URL) uv run python -m scripts.init_db
 	cd apps/api && KPS_DATABASE_URL=$(KPS_DATABASE_URL) uv run python -m scripts.seed
 	cd apps/api && KPS_DATABASE_URL=$(KPS_DATABASE_URL) uv run uvicorn app.main:app --reload
+
+# Lint + format check (exactly what CI enforces).
+lint:
+	uv run ruff check .
+	uv run ruff format --check .
+
+# Auto-fix lint findings and apply formatting.
+fmt:
+	uv run ruff check --fix .
+	uv run ruff format .

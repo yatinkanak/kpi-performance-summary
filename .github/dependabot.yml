@@ -1,0 +1,36 @@
+version: 2
+# Weekly dependency PRs, grouped per ecosystem to keep the noise down.
+updates:
+  - package-ecosystem: uv # Python workspace (pyproject.toml + uv.lock)
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
+
+  - package-ecosystem: npm # frontend
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      frontend:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions # workflow action versions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker # base images
+    directory: /apps/api
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /apps/mcp
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: weekly

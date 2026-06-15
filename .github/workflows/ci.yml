@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint · format · hygiene (pre-commit)
+    runs-on: ubuntu-latest
+    # Runs the SAME hooks as .pre-commit-config.yaml (ruff lint + format + hygiene),
+    # so the gate is enforced for everyone even if a contributor didn't `pre-commit install`.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pre-commit/action@v3.0.1
+
+  backend:
+    name: Backend — tests
+    runs-on: ubuntu-latest
+    # Real Postgres for the DB-backed suites (matches "test what we ship": DISTINCT ON,
+    # partial indexes, native ENUM). KPS_DATABASE_URL points the tests at this service.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: kps
+          POSTGRES_PASSWORD: kps
+          POSTGRES_DB: kps
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kps"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      KPS_DATABASE_URL: postgresql+asyncpg://kps:kps@localhost:5432/kps
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.19"
+          enable-cache: true
+      - name: Install workspace (locked)
+        run: uv sync --frozen
+      - name: Tests (pytest — core + api + mcp)
+        run: uv run pytest -q
+
+  frontend:
+    name: Frontend — build · tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Build (tsc typecheck + vite build)
+        run: npm run build
+      - name: Unit tests (vitest)
+        run: npm test

@@ -3,9 +3,9 @@
 Runs against the real DB via the ``db_session`` fixture; skipped automatically when
 Postgres isn't reachable (e.g. a bare local ``pytest``), and executed in ``make test``.
 """
-from sqlalchemy import select
 
 from kpi_perf_summary_core.db.models import Sector
+from sqlalchemy import select
 
 
 async def test_db_session_roundtrip(db_session):

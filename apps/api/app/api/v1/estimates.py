@@ -1,8 +1,8 @@
 """Publish new estimates (the only write path). Gated by a service token."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
-
 from kpi_perf_summary_core import schemas
 
 from app.deps import ServiceDep, require_publish_token

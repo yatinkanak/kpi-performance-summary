@@ -1,15 +1,15 @@
 """Structured logging, request IDs, and Prometheus metrics."""
+
 from __future__ import annotations
 
 import time
 import uuid
 
 import structlog
+from kpi_perf_summary_core.config import get_settings
 from prometheus_client import Counter, Histogram
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-
-from kpi_perf_summary_core.config import get_settings
 
 
 def configure_logging() -> None:
@@ -28,12 +28,8 @@ def configure_logging() -> None:
 
 log = structlog.get_logger()
 
-REQUEST_COUNT = Counter(
-    "http_requests_total", "HTTP requests", ["method", "path", "status"]
-)
-REQUEST_LATENCY = Histogram(
-    "http_request_duration_seconds", "Request latency", ["method", "path"]
-)
+REQUEST_COUNT = Counter("http_requests_total", "HTTP requests", ["method", "path", "status"])
+REQUEST_LATENCY = Histogram("http_request_duration_seconds", "Request latency", ["method", "path"])
 
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):

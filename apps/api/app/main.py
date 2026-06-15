@@ -1,17 +1,17 @@
 """FastAPI application factory."""
+
 from __future__ import annotations
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
+from kpi_perf_summary_core.config import get_settings
+from kpi_perf_summary_core.repositories import NotFoundError
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
-
-from kpi_perf_summary_core.config import get_settings
-from kpi_perf_summary_core.repositories import NotFoundError
 
 from app.api.v1 import companies, estimates, health, kpis, search
 from app.observability import ObservabilityMiddleware, configure_logging

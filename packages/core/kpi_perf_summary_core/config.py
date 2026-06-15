@@ -1,4 +1,5 @@
 """Centralized configuration, loaded from environment variables."""
+
 from __future__ import annotations
 
 from functools import lru_cache
@@ -22,11 +23,11 @@ class Settings(BaseSettings):
 
     # --- Database connection pool (SQLAlchemy QueuePool) ---
     # Tunable per environment so a multi-worker deploy can size the pool to its DB limits.
-    db_pool_size: int = Field(10, ge=1)        # persistent connections kept open
-    db_max_overflow: int = Field(20, ge=0)     # extra connections allowed under load burst
-    db_pool_timeout: int = Field(30, ge=1)     # seconds to wait for a free connection
+    db_pool_size: int = Field(10, ge=1)  # persistent connections kept open
+    db_max_overflow: int = Field(20, ge=0)  # extra connections allowed under load burst
+    db_pool_timeout: int = Field(30, ge=1)  # seconds to wait for a free connection
     db_pool_recycle: int = Field(1800, ge=-1)  # recycle connections older than N sec (-1 = never)
-    db_pool_pre_ping: bool = True              # liveness-check a connection before use
+    db_pool_pre_ping: bool = True  # liveness-check a connection before use
 
     # Token gating the single write path. Defaults to a dev placeholder so the app runs
     # out of the box; in production the placeholder is rejected (see the validator) so a
@@ -46,7 +47,7 @@ class Settings(BaseSettings):
         return self.environment.strip().lower() == "production"
 
     @model_validator(mode="after")
-    def _reject_dev_token_in_production(self) -> "Settings":
+    def _reject_dev_token_in_production(self) -> Settings:
         """Fail closed in production rather than ship the publicly-known dev token."""
         if self.is_production and self.publish_token == DEV_PUBLISH_TOKEN:
             raise ValueError(

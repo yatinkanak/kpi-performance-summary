@@ -7,13 +7,12 @@ Run:
     python server.py --transport stdio          # for Claude Desktop / Cursor (local)
     python server.py --transport http --port 8765   # for HTTP-capable clients
 """
+
 from __future__ import annotations
 
 import argparse
-from typing import Optional
 
 from fastmcp import FastMCP
-
 from kpi_perf_summary_core.db.session import SessionFactory
 from kpi_perf_summary_core.repositories import NotFoundError
 from kpi_perf_summary_core.services import KpiService
@@ -55,7 +54,7 @@ async def list_kpis() -> list[dict]:
 
 
 @mcp.tool
-async def search_companies(query: str, sector: Optional[str] = None) -> list[dict]:
+async def search_companies(query: str, sector: str | None = None) -> list[dict]:
     """Find companies by name or ticker (optionally filtered by sector).
     Returns ticker, name, and sector. Use this to resolve a company name to its
     ticker before pulling data."""
@@ -90,9 +89,9 @@ async def get_company_summary(ticker: str) -> dict:
 async def get_kpi_series(
     ticker: str,
     kpi: str,
-    date_from: Optional[str] = None,
-    date_to: Optional[str] = None,
-    est_type: Optional[str] = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    est_type: str | None = None,
 ) -> dict:
     """Get the full time series for one (company, KPI): historical quarterly
     values plus the QTD trajectory. 'kpi' is the KPI name from list_kpis.
@@ -135,6 +134,7 @@ async def get_qtd(ticker: str, kpi: str) -> dict:
 async def compare_companies(tickers: list[str], kpi: str) -> dict:
     """Compare the latest historical value of one KPI across several companies.
     'tickers' is a list of ticker symbols; 'kpi' is the KPI name."""
+
     async def _run(svc: KpiService):
         results = []
         for t in tickers:
@@ -158,7 +158,7 @@ async def compare_companies(tickers: list[str], kpi: str) -> dict:
     return {"kpi": kpi, "results": await _with_service(_run)}
 
 
-def _d(value: Optional[str]):
+def _d(value: str | None):
     from datetime import date
 
     return date.fromisoformat(value) if value else None

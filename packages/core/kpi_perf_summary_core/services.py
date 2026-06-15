@@ -3,10 +3,10 @@
 This is the single source of truth for series assembly, summary math (QoQ/YoY),
 and the publish path. Both adapters call these functions; neither re-implements them.
 """
+
 from __future__ import annotations
 
 from datetime import date
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +14,7 @@ from kpi_perf_summary_core import schemas
 from kpi_perf_summary_core.repositories import NotFoundError, Repository
 
 
-def _pct_change(curr: Optional[float], prev: Optional[float]) -> Optional[float]:
+def _pct_change(curr: float | None, prev: float | None) -> float | None:
     if curr is None or prev is None or prev == 0:
         return None
     return round((curr - prev) / abs(prev) * 100, 2)
@@ -37,8 +37,8 @@ class KpiService:
 
     async def search_companies(
         self,
-        search: Optional[str] = None,
-        sector: Optional[str] = None,
+        search: str | None = None,
+        sector: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[schemas.CompanyOut]:
@@ -86,8 +86,8 @@ class KpiService:
         self,
         ticker: str,
         kpi_ref: str | int,
-        date_from: Optional[date] = None,
-        date_to: Optional[date] = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
     ) -> schemas.KpiSeriesOut:
         company = await self.repo.get_company(ticker)
         kpi = await self._resolve_kpi(kpi_ref)
@@ -142,12 +142,8 @@ class KpiService:
                     unit=kpi.unit,
                     latest_period=latest["fiscal_period"] if latest else None,
                     latest_value=latest_val,
-                    qoq_pct=_pct_change(
-                        latest_val, float(prev_q["value"]) if prev_q else None
-                    ),
-                    yoy_pct=_pct_change(
-                        latest_val, float(prev_y["value"]) if prev_y else None
-                    ),
+                    qoq_pct=_pct_change(latest_val, float(prev_q["value"]) if prev_q else None),
+                    yoy_pct=_pct_change(latest_val, float(prev_y["value"]) if prev_y else None),
                     qtd_value=float(qtd[-1]["value"]) if qtd else None,
                     qtd_as_of=qtd[-1]["as_of"] if qtd else None,
                 )

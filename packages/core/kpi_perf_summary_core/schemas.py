@@ -1,8 +1,9 @@
 """Pydantic DTOs shared by the API and MCP adapters."""
+
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -19,7 +20,7 @@ class KpiOut(BaseModel):
     id: int
     name: str
     unit: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class CompanyOut(BaseModel):
@@ -30,7 +31,7 @@ class CompanyOut(BaseModel):
 
 class CompanyDetailOut(CompanyOut):
     kpis: list[KpiOut] = Field(default_factory=list)
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
 
 
 class SeriesPoint(BaseModel):
@@ -39,7 +40,7 @@ class SeriesPoint(BaseModel):
     period_end: date
     est_type: EstType
     value: float
-    as_of: Optional[date] = None
+    as_of: date | None = None
 
 
 class KpiSeriesOut(BaseModel):
@@ -49,8 +50,8 @@ class KpiSeriesOut(BaseModel):
     unit: str
     historical: list[SeriesPoint] = Field(default_factory=list)
     qtd: list[SeriesPoint] = Field(default_factory=list)
-    last_updated: Optional[datetime] = None
-    qtd_as_of: Optional[date] = None
+    last_updated: datetime | None = None
+    qtd_as_of: date | None = None
 
 
 class KpiSummary(BaseModel):
@@ -58,19 +59,19 @@ class KpiSummary(BaseModel):
 
     kpi: str
     unit: str
-    latest_period: Optional[str] = None
-    latest_value: Optional[float] = None
-    qoq_pct: Optional[float] = None  # vs prior quarter
-    yoy_pct: Optional[float] = None  # vs same quarter prior year
-    qtd_value: Optional[float] = None
-    qtd_as_of: Optional[date] = None
+    latest_period: str | None = None
+    latest_value: float | None = None
+    qoq_pct: float | None = None  # vs prior quarter
+    yoy_pct: float | None = None  # vs same quarter prior year
+    qtd_value: float | None = None
+    qtd_as_of: date | None = None
 
 
 class CompanySummaryOut(BaseModel):
     ticker: str
     company_name: str
     sector: str
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
     kpis: list[KpiSummary] = Field(default_factory=list)
 
 
@@ -86,7 +87,7 @@ class PublishEstimateIn(BaseModel):
     fiscal_period: str = Field(examples=["2026Q1"])
     est_type: EstType
     value: float
-    as_of: Optional[date] = Field(
+    as_of: date | None = Field(
         default=None,
         description="Snapshot date for QTD estimates; omit for historical.",
     )
@@ -99,5 +100,5 @@ class PublishEstimateOut(BaseModel):
     fiscal_period: str
     est_type: EstType
     value: float
-    as_of: Optional[date] = None
+    as_of: date | None = None
     published_at: datetime

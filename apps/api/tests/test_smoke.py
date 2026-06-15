@@ -3,9 +3,9 @@
 DB-backed integration tests run against the Postgres service (see README);
 these verify the app wires up and the OpenAPI contract is generated.
 """
+
 import httpx
 import pytest
-
 from app.main import app
 
 

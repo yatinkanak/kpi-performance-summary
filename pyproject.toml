@@ -28,6 +28,7 @@ dev = [
     "pytest>=8.2.0",
     "pytest-asyncio>=0.23.0",
     "httpx>=0.27.0",
+    "ruff>=0.6",
 ]
 
 # Lets `uv run pytest` from the repo root collect both backend suites with the
@@ -36,6 +37,36 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["apps/api/tests", "apps/mcp/tests"]
+
+# Lint + format for the whole workspace (run via `uv run ruff ...`, pre-commit, and CI).
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# pycodestyle/pyflakes (default) + import sorting, pyupgrade, bugbear, warnings.
+select = ["E", "F", "W", "I", "UP", "B"]
+# UP042 wants StrEnum, but EstimateType is mapped to a Postgres ENUM by SQLAlchemy;
+# keeping str+Enum avoids changing that mapping's semantics.
+ignore = ["UP042"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI uses these as argument defaults by design (Query/Depends/Header/...), so
+# B008 ("no function calls in defaults") is a false positive for them.
+extend-immutable-calls = [
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Header",
+    "fastapi.Depends",
+    "fastapi.Body",
+    "fastapi.Cookie",
+    "fastapi.Form",
+    "fastapi.File",
+    "fastapi.Security",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["B"]  # allow pytest idioms (fixtures, asserts) without bugbear nits
 
 [tool.uv]
 package = false

@@ -1,8 +1,8 @@
 """Discovery endpoints: unified search and sector listing."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Query
-
 from kpi_perf_summary_core import schemas
 
 from app.deps import ServiceDep

@@ -1,8 +1,8 @@
 """KPI catalog."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter
-
 from kpi_perf_summary_core import schemas
 
 from app.deps import ServiceDep

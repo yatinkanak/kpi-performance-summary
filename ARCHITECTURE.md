@@ -327,7 +327,7 @@ take-home focused; revisit as needed.
   publishes are de-duplicated; per-client rate-limit tiers.
 
 ### Product & frontend
-- WebSocket/SSE (Server Sent Events) push when daily QTD snapshots land; saved watchlists; 
+- WebSocket/SSE (Server Sent Events) push when daily QTD snapshots land; saved watchlists;
   sector-level rollups.
 - Generate the frontend client from the OpenAPI schema in CI (`openapi-typescript`) so types
   can never drift from the backend (hand-written today).

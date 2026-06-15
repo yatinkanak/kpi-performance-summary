@@ -4,10 +4,10 @@ Drives the app through httpx against a real Postgres (via the ``api_client`` fix
 DB session is shared with ``seeded``), covering routing, response shaping, error mapping
 (404 / 400), and the publish-token gate (403).
 """
-from sqlalchemy import select
 
 from kpi_perf_summary_core.config import get_settings
 from kpi_perf_summary_core.db.models import Kpi
+from sqlalchemy import select
 
 TOKEN = get_settings().publish_token
 SERIES = "/api/v1/companies/TSTCO/kpis/Test Revenue ($MM)/series"
@@ -65,8 +65,12 @@ async def test_search_endpoint(seeded, api_client):
 # ----- publish: auth gate + validation + success -------------------------
 def _qtd_body():
     return {
-        "period_start": "2025-04-01", "period_end": "2025-06-30",
-        "fiscal_period": "2025Q2", "est_type": "qtd", "value": 120.0, "as_of": "2025-05-31",
+        "period_start": "2025-04-01",
+        "period_end": "2025-06-30",
+        "fiscal_period": "2025Q2",
+        "est_type": "qtd",
+        "value": 120.0,
+        "as_of": "2025-05-31",
     }
 
 

@@ -12,6 +12,7 @@ tests still pass on a bare ``pytest`` run. We test against Postgres rather than 
 purpose: the schema relies on Postgres-only behavior (``DISTINCT ON``, partial indexes,
 native ENUM, ``SMALLINT``/``BIGINT`` identity PKs), so SQLite would test a different DB.
 """
+
 from __future__ import annotations
 
 from datetime import date
@@ -19,15 +20,14 @@ from datetime import date
 import httpx
 import pytest
 import pytest_asyncio
-from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.pool import NullPool
-
 from kpi_perf_summary_core.config import get_settings
 from kpi_perf_summary_core.db.models import Base, Company, Estimate, EstimateType, Kpi, Sector
 from kpi_perf_summary_core.db.session import get_session
 from kpi_perf_summary_core.db.views import CURRENT_ESTIMATES_VIEW
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.pool import NullPool
 
 
 @pytest_asyncio.fixture
@@ -117,8 +117,14 @@ async def seed_dataset(session: AsyncSession) -> None:
     for fp, ps, pe, val in hist:
         session.add(
             Estimate(
-                company_id=company.id, kpi_id=kpi.id, period_start=ps, period_end=pe,
-                fiscal_period=fp, est_type=EstimateType.historical, value=val, as_of=None,
+                company_id=company.id,
+                kpi_id=kpi.id,
+                period_start=ps,
+                period_end=pe,
+                fiscal_period=fp,
+                est_type=EstimateType.historical,
+                value=val,
+                as_of=None,
                 source="seed",
             )
         )
@@ -126,9 +132,14 @@ async def seed_dataset(session: AsyncSession) -> None:
     for as_of, val in qtd:
         session.add(
             Estimate(
-                company_id=company.id, kpi_id=kpi.id,
-                period_start=date(2025, 4, 1), period_end=date(2025, 6, 30),
-                fiscal_period="2025Q2", est_type=EstimateType.qtd, value=val, as_of=as_of,
+                company_id=company.id,
+                kpi_id=kpi.id,
+                period_start=date(2025, 4, 1),
+                period_end=date(2025, 6, 30),
+                fiscal_period="2025Q2",
+                est_type=EstimateType.qtd,
+                value=val,
+                as_of=as_of,
                 source="seed",
             )
         )
