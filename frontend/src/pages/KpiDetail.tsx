@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { exportUrl, useKpiSeries } from "../api/client";
 import KpiChart from "../components/KpiChart";
+import FavoriteButton from "../components/FavoriteButton";
 
 export default function KpiDetail() {
   const { ticker = "", kpiId = "" } = useParams();
@@ -29,7 +30,8 @@ export default function KpiDetail() {
         ← {ticker}
       </Link>
       <h1>
-        {series.company_name} — {series.kpi}
+        {series.company_name} — {series.kpi}{" "}
+        <FavoriteButton ticker={series.ticker} kpi={series.kpi} />
       </h1>
       <p className="muted">
         Unit: {series.unit}

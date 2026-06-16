@@ -1,7 +1,7 @@
 // Typed API client + TanStack Query hooks.
 // In production these types are generated from the backend OpenAPI schema via
 // `openapi-typescript`; hand-written here to keep the scaffold self-contained.
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 const API = `${BASE}/api/v1`;
@@ -47,11 +47,36 @@ export type CompanySummary = {
   kpis: KpiSummary[];
 };
 export type SearchResult = { sectors: Sector[]; companies: Company[]; kpis: Kpi[] };
+export type Favorite = {
+  ticker: string;
+  company_name: string;
+  sector: string;
+  kpi: string;
+  kpi_id: number;
+  unit: string;
+  created_at: string;
+  metrics?: KpiSummary | null;
+};
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${API}${path}`);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json() as Promise<T>;
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json() as Promise<T>;
+}
+
+async function del(path: string): Promise<void> {
+  const res = await fetch(`${API}${path}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
 }
 
 // ---- hooks ----------------------------------------------------------------
@@ -84,6 +109,17 @@ export const useCompanySummary = (ticker: string) =>
     enabled: !!ticker,
   });
 
+// Fetch the at-a-glance summary for many companies at once (one request each,
+// sharing the same cache key as useCompanySummary). Drives the all-companies table.
+export const useCompanySummaries = (tickers: string[]) =>
+  useQueries({
+    queries: tickers.map((ticker) => ({
+      queryKey: ["summary", ticker],
+      queryFn: () => get<CompanySummary>(`/companies/${ticker}/summary`),
+      enabled: !!ticker,
+    })),
+  });
+
 export const useKpiSeries = (
   ticker: string,
   kpiId: number | string,
@@ -108,6 +144,28 @@ export const useSearch = (q: string) =>
     queryFn: () => get<SearchResult>(`/search?q=${encodeURIComponent(q)}`),
     enabled: q.length >= 2,
   });
+
+// ---- favorites ------------------------------------------------------------
+export const useFavorites = () =>
+  useQuery({ queryKey: ["favorites"], queryFn: () => get<Favorite[]>("/favorites") });
+
+export const useAddFavorite = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { ticker: string; kpi: string }) =>
+      post<Favorite>("/favorites", v),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["favorites"] }),
+  });
+};
+
+export const useRemoveFavorite = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { ticker: string; kpi: string }) =>
+      del(`/favorites?${new URLSearchParams({ ticker: v.ticker, kpi: v.kpi })}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["favorites"] }),
+  });
+};
 
 export function exportUrl(ticker: string, kpiId: number | string, from?: string, to?: string) {
   const params = new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}) });

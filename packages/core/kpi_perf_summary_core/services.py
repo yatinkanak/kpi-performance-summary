@@ -120,34 +120,39 @@ class KpiService:
         )
 
     # ----- summary (the at-a-glance dashboard) ---------------------------
+    async def _kpi_summary(
+        self, ticker: str, kpi_id: int, kpi_name: str, unit: str
+    ) -> schemas.KpiSummary:
+        """Latest value + QoQ/YoY/QTD for one (company, KPI). The single source of
+        truth for at-a-glance metrics, shared by the company summary and favorites."""
+        rows = await self.repo.series(ticker, kpi_id, None, None)
+        hist = [r for r in rows if r["est_type"] == "historical"]
+        qtd = [r for r in rows if r["est_type"] == "qtd"]
+
+        latest = hist[-1] if hist else None
+        prev_q = hist[-2] if len(hist) >= 2 else None
+        prev_y = hist[-5] if len(hist) >= 5 else None  # 4 quarters back
+        latest_val = float(latest["value"]) if latest else None
+
+        return schemas.KpiSummary(
+            kpi=kpi_name,
+            unit=unit,
+            latest_period=latest["fiscal_period"] if latest else None,
+            latest_value=latest_val,
+            qoq_pct=_pct_change(latest_val, float(prev_q["value"]) if prev_q else None),
+            yoy_pct=_pct_change(latest_val, float(prev_y["value"]) if prev_y else None),
+            qtd_value=float(qtd[-1]["value"]) if qtd else None,
+            qtd_as_of=qtd[-1]["as_of"] if qtd else None,
+        )
+
     async def get_company_summary(self, ticker: str) -> schemas.CompanySummaryOut:
         company = await self.repo.get_company(ticker)
         kpis = await self.repo.kpis_for_company(company["id"])
         last_updated = await self.repo.company_last_updated(company["id"])
 
-        summaries: list[schemas.KpiSummary] = []
-        for kpi in kpis:
-            rows = await self.repo.series(ticker, kpi.id, None, None)
-            hist = [r for r in rows if r["est_type"] == "historical"]
-            qtd = [r for r in rows if r["est_type"] == "qtd"]
-
-            latest = hist[-1] if hist else None
-            prev_q = hist[-2] if len(hist) >= 2 else None
-            prev_y = hist[-5] if len(hist) >= 5 else None  # 4 quarters back
-            latest_val = float(latest["value"]) if latest else None
-
-            summaries.append(
-                schemas.KpiSummary(
-                    kpi=kpi.name,
-                    unit=kpi.unit,
-                    latest_period=latest["fiscal_period"] if latest else None,
-                    latest_value=latest_val,
-                    qoq_pct=_pct_change(latest_val, float(prev_q["value"]) if prev_q else None),
-                    yoy_pct=_pct_change(latest_val, float(prev_y["value"]) if prev_y else None),
-                    qtd_value=float(qtd[-1]["value"]) if qtd else None,
-                    qtd_as_of=qtd[-1]["as_of"] if qtd else None,
-                )
-            )
+        summaries = [
+            await self._kpi_summary(company["ticker"], kpi.id, kpi.name, kpi.unit) for kpi in kpis
+        ]
 
         return schemas.CompanySummaryOut(
             ticker=company["ticker"],
@@ -156,6 +161,39 @@ class KpiService:
             last_updated=last_updated,
             kpis=summaries,
         )
+
+    # ----- favorites -----------------------------------------------------
+    async def list_favorites(self) -> list[schemas.FavoriteOut]:
+        rows = await self.repo.list_favorites()
+        return [
+            schemas.FavoriteOut(
+                **r,
+                metrics=await self._kpi_summary(r["ticker"], r["kpi_id"], r["kpi"], r["unit"]),
+            )
+            for r in rows
+        ]
+
+    async def add_favorite(self, ticker: str, kpi_ref: str | int) -> schemas.FavoriteOut:
+        company = await self.repo.get_company(ticker)
+        kpi = await self._resolve_kpi(kpi_ref)
+        fav = await self.repo.add_favorite(company["id"], kpi.id)
+        await self.session.commit()
+        return schemas.FavoriteOut(
+            ticker=company["ticker"],
+            company_name=company["name"],
+            sector=company["sector"],
+            kpi=kpi.name,
+            kpi_id=kpi.id,
+            unit=kpi.unit,
+            created_at=fav.created_at,
+            metrics=await self._kpi_summary(company["ticker"], kpi.id, kpi.name, kpi.unit),
+        )
+
+    async def remove_favorite(self, ticker: str, kpi_ref: str | int) -> None:
+        company = await self.repo.get_company(ticker)
+        kpi = await self._resolve_kpi(kpi_ref)
+        await self.repo.remove_favorite(company["id"], kpi.id)
+        await self.session.commit()
 
     # ----- publish (append-only write) -----------------------------------
     async def publish_estimate(

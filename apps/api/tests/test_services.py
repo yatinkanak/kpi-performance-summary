@@ -97,6 +97,68 @@ async def test_search(seeded):
     assert any("Revenue" in k.name for k in (await svc.search("revenue")).kpis)
 
 
+# ----- favorites ---------------------------------------------------------
+def _tstco_favs(favs):
+    """Filter to this test's synthetic company so pre-existing favorites can't interfere."""
+    return [f for f in favs if f.ticker == "TSTCO"]
+
+
+async def test_add_favorite_returns_at_a_glance_metrics(seeded):
+    fav = await KpiService(seeded).add_favorite("TSTCO", "Test Revenue ($MM)")
+    assert fav.ticker == "TSTCO"
+    assert fav.kpi == "Test Revenue ($MM)"
+    assert fav.unit == "$MM"
+    # same per-KPI metrics the company summary computes
+    assert fav.metrics is not None
+    assert fav.metrics.latest_value == 200.0
+    assert fav.metrics.qoq_pct == 25.0
+    assert fav.metrics.yoy_pct == 100.0
+    assert fav.metrics.qtd_value == 90.0
+
+
+async def test_add_favorite_is_idempotent_by_id_and_name(seeded):
+    svc = KpiService(seeded)
+    kpi = await svc.repo.get_kpi_by_name("Test Revenue ($MM)")
+    first = await svc.add_favorite("TSTCO", "Test Revenue ($MM)")  # by name
+    again = await svc.add_favorite("tstco", str(kpi.id))  # by id + lowercase ticker
+    assert len(_tstco_favs(await svc.list_favorites())) == 1  # no duplicate row
+    assert again.created_at == first.created_at  # same row returned
+
+
+async def test_favorite_metrics_match_company_summary(seeded):
+    """Favorites reuse the shared _kpi_summary helper, so they must not drift from
+    the company summary for the same (company, KPI)."""
+    svc = KpiService(seeded)
+    await svc.add_favorite("TSTCO", "Test Revenue ($MM)")
+    fav = _tstco_favs(await svc.list_favorites())[0]
+    summary = await svc.get_company_summary("TSTCO")
+    kpi_metrics = next(k for k in summary.kpis if k.kpi == fav.kpi)
+    assert fav.metrics.model_dump() == kpi_metrics.model_dump()
+
+
+async def test_remove_favorite(seeded):
+    svc = KpiService(seeded)
+    await svc.add_favorite("TSTCO", "Test Revenue ($MM)")
+    await svc.remove_favorite("TSTCO", "Test Revenue ($MM)")
+    assert _tstco_favs(await svc.list_favorites()) == []
+
+
+async def test_remove_favorite_is_noop_when_absent(seeded):
+    svc = KpiService(seeded)
+    await svc.remove_favorite("TSTCO", "Test Revenue ($MM)")  # never added
+    assert _tstco_favs(await svc.list_favorites()) == []
+
+
+async def test_favorite_unknown_ticker_raises(seeded):
+    with pytest.raises(NotFoundError):
+        await KpiService(seeded).add_favorite("NOPE", "Test Revenue ($MM)")
+
+
+async def test_favorite_unknown_kpi_raises(seeded):
+    with pytest.raises(NotFoundError):
+        await KpiService(seeded).add_favorite("TSTCO", "No Such KPI")
+
+
 # ----- publish: validation ----------------------------------------------
 async def test_publish_qtd_requires_as_of(seeded):
     payload = schemas.PublishEstimateIn(

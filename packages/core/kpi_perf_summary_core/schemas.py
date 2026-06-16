@@ -81,6 +81,24 @@ class SearchResultOut(BaseModel):
     kpis: list[KpiOut] = Field(default_factory=list)
 
 
+class FavoriteIn(BaseModel):
+    ticker: str
+    kpi: str = Field(description="KPI id or name", examples=["Revenue"])
+
+
+class FavoriteOut(BaseModel):
+    """A bookmarked (company, KPI) pair, enriched with its latest at-a-glance metrics."""
+
+    ticker: str
+    company_name: str
+    sector: str
+    kpi: str
+    kpi_id: int
+    unit: str
+    created_at: datetime
+    metrics: KpiSummary | None = None
+
+
 class PublishEstimateIn(BaseModel):
     period_start: date
     period_end: date

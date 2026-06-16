@@ -15,6 +15,7 @@ from sqlalchemy import (
     Numeric,
     SmallInteger,
     String,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -93,3 +94,21 @@ class Estimate(Base):
             postgresql_where=(est_type == EstimateType.qtd),
         ),
     )
+
+
+class Favorite(Base):
+    """A bookmarked (company, KPI) pair. Global to the app (no user auth in scope)."""
+
+    __tablename__ = "favorites"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"), nullable=False, index=True)
+    kpi_id: Mapped[int] = mapped_column(ForeignKey("kpis.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    company: Mapped[Company] = relationship()
+    kpi: Mapped[Kpi] = relationship()
+
+    __table_args__ = (UniqueConstraint("company_id", "kpi_id", name="uq_favorite_company_kpi"),)

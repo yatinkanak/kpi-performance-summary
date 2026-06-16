@@ -52,3 +52,32 @@ h1 { font-size: 22px; } h2 { font-size: 18px; }
 }
 .btn { background: var(--accent); color: #fff; cursor: pointer; }
 .kpi-pill { display: inline-block; padding: 4px 10px; border: 1px solid var(--border); border-radius: 16px; margin: 4px; }
+
+.nav { display: flex; gap: 16px; }
+.nav a { color: var(--muted); font-size: 14px; font-weight: 500; }
+.nav a:hover { color: var(--accent); }
+
+.data-table {
+  width: 100%; border-collapse: collapse; background: var(--card);
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+}
+.data-table th, .data-table td {
+  text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border);
+  font-size: 14px; vertical-align: top;
+}
+.data-table thead th {
+  background: #f0f3f6; color: var(--muted); font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600;
+}
+.data-table tbody tr:hover { background: #f6f8fa; }
+.data-table td.num, .data-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .company-cell { border-left: 3px solid var(--accent); font-weight: 600; }
+.data-table .company-cell .badge { margin-top: 4px; font-weight: 400; }
+
+.star {
+  background: none; border: none; cursor: pointer; padding: 0;
+  font-size: 18px; line-height: 1; color: var(--muted); vertical-align: middle;
+}
+.star:hover { color: #d4a017; }
+.star.on { color: #e3b341; }
+.star:disabled { cursor: default; opacity: 0.5; }

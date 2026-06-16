@@ -13,7 +13,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-from app.api.v1 import companies, estimates, health, kpis, search
+from app.api.v1 import companies, estimates, favorites, health, kpis, search
 from app.observability import ObservabilityMiddleware, configure_logging
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
@@ -36,7 +36,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["*"],
     )
 
@@ -59,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(search.router, prefix=api, tags=["search"])
     app.include_router(kpis.router, prefix=api, tags=["kpis"])
     app.include_router(companies.router, prefix=api, tags=["companies"])
+    app.include_router(favorites.router, prefix=api, tags=["favorites"])
     app.include_router(estimates.router, prefix=api, tags=["estimates"])
 
     @app.get("/metrics", include_in_schema=False)

@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy import func, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from kpi_perf_summary_core.db.models import Company, Estimate, Kpi, Sector
+from kpi_perf_summary_core.db.models import Company, Estimate, Favorite, Kpi, Sector
 
 
 class NotFoundError(Exception):
@@ -129,6 +129,58 @@ class Repository:
             )
         ).mappings()
         return [dict(r) for r in rows]
+
+    # ----- favorites -----------------------------------------------------
+    async def list_favorites(self) -> list[dict]:
+        rows = (
+            await self.s.execute(
+                select(
+                    Company.ticker,
+                    Company.name,
+                    Sector.name,
+                    Kpi.id,
+                    Kpi.name,
+                    Kpi.unit,
+                    Favorite.created_at,
+                )
+                .join(Company, Company.id == Favorite.company_id)
+                .join(Sector, Sector.id == Company.sector_id)
+                .join(Kpi, Kpi.id == Favorite.kpi_id)
+                .order_by(Favorite.created_at.desc())
+            )
+        ).all()
+        return [
+            {
+                "ticker": r[0],
+                "company_name": r[1],
+                "sector": r[2],
+                "kpi_id": r[3],
+                "kpi": r[4],
+                "unit": r[5],
+                "created_at": r[6],
+            }
+            for r in rows
+        ]
+
+    async def add_favorite(self, company_id: int, kpi_id: int) -> Favorite:
+        """Insert the bookmark, or return the existing one (idempotent)."""
+        existing = (
+            await self.s.execute(
+                select(Favorite).where(Favorite.company_id == company_id, Favorite.kpi_id == kpi_id)
+            )
+        ).scalar_one_or_none()
+        if existing:
+            return existing
+        fav = Favorite(company_id=company_id, kpi_id=kpi_id)
+        self.s.add(fav)
+        await self.s.flush()
+        await self.s.refresh(fav)  # populate server-side created_at
+        return fav
+
+    async def remove_favorite(self, company_id: int, kpi_id: int) -> None:
+        await self.s.execute(
+            delete(Favorite).where(Favorite.company_id == company_id, Favorite.kpi_id == kpi_id)
+        )
 
     # ----- write (append-only) -------------------------------------------
     async def insert_estimate(self, company_id: int, kpi_id: int, payload: dict) -> Estimate:

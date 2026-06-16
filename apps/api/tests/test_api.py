@@ -62,6 +62,33 @@ async def test_search_endpoint(seeded, api_client):
     assert any(c["ticker"] == "TSTCO" for c in r.json()["companies"])
 
 
+# ----- favorites: add / list (with metrics) / remove ---------------------
+FAVORITES = "/api/v1/favorites"
+FAV_BODY = {"ticker": "TSTCO", "kpi": "Test Revenue ($MM)"}
+
+
+async def test_add_list_remove_favorite(seeded, api_client):
+    r = await api_client.post(FAVORITES, json=FAV_BODY)
+    assert r.status_code == 201
+    fav = r.json()
+    assert fav["ticker"] == "TSTCO" and fav["kpi"] == "Test Revenue ($MM)"
+    # the favorite carries its at-a-glance metrics
+    assert fav["metrics"]["qoq_pct"] == 25.0 and fav["metrics"]["yoy_pct"] == 100.0
+
+    listed = (await api_client.get(FAVORITES)).json()
+    assert any(f["ticker"] == "TSTCO" and f["kpi"] == "Test Revenue ($MM)" for f in listed)
+
+    d = await api_client.delete(FAVORITES, params=FAV_BODY)
+    assert d.status_code == 204
+    after = (await api_client.get(FAVORITES)).json()
+    assert not any(f["ticker"] == "TSTCO" for f in after)
+
+
+async def test_add_favorite_unknown_ticker_404(seeded, api_client):
+    r = await api_client.post(FAVORITES, json={"ticker": "NOPE", "kpi": "Test Revenue ($MM)"})
+    assert r.status_code == 404
+
+
 # ----- publish: auth gate + validation + success -------------------------
 def _qtd_body():
     return {
