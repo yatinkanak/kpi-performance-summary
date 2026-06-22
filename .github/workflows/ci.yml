@@ -16,7 +16,7 @@ jobs:
     # Runs the SAME hooks as .pre-commit-config.yaml (ruff lint + format + hygiene),
     # so the gate is enforced for everyone even if a contributor didn't `pre-commit install`.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -44,7 +44,7 @@ jobs:
     env:
       KPS_DATABASE_URL: postgresql+asyncpg://kps:kps@localhost:5432/kps
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up uv
         uses: astral-sh/setup-uv@v6
         with:
@@ -62,7 +62,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
